@@ -8,21 +8,19 @@ extern crate flipperzero_rt;
 extern crate alloc;
 extern crate flipperzero_alloc;
 
-use core::ffi::{c_void, CStr};
+mod gui;
 
 use alloc::boxed::Box;
+use core::ffi::CStr;
+
 use flipperzero::{
     furi::{message_queue::MessageQueue, time::Duration},
     println,
 };
 use flipperzero_rt::{entry, manifest};
-use flipperzero_sys::{
-    canvas_draw_str_aligned, canvas_set_font, furi_record_close,
-    furi_record_open, gui_add_view_port, gui_remove_view_port, view_port_alloc,
-    view_port_draw_callback_set, view_port_enabled_set, view_port_free,
-    view_port_input_callback_set, view_port_update, AlignLeft, AlignTop,
-    Canvas, FontPrimary, Gui, GuiLayerFullscreen, InputEvent, InputKeyBack,
-};
+use flipperzero_sys as sys;
+
+use gui::{Gui, ViewPort};
 
 manifest!(
     name = "YT Bluetooth Remote",
@@ -31,24 +29,8 @@ manifest!(
     icon = "icon.icon",
 );
 
-const RECORD_GUI: &CStr = c"gui";
-
-unsafe extern "C" fn gui_render(canvas: *mut Canvas, _state: *mut c_void) {
-    canvas_set_font(canvas, FontPrimary);
-    let str = c"foo";
-    canvas_draw_str_aligned(canvas, 1, 1, AlignLeft, AlignTop, str.as_ptr());
-}
-unsafe extern "C" fn gui_input(event: *mut InputEvent, state: *mut c_void) {
-    let state = state.cast_const().cast::<State>().as_ref().unwrap();
-    let event = unsafe { event.read() };
-    state
-        .event_queue
-        .put(event, Duration::WAIT_FOREVER)
-        .unwrap();
-}
-
 struct State {
-    event_queue: MessageQueue<InputEvent>,
+    event_queue: MessageQueue<sys::InputEvent>,
 }
 
 entry!(main);
@@ -59,36 +41,31 @@ fn main(_args: Option<&CStr>) -> i32 {
         event_queue: MessageQueue::new(8),
     });
 
-    let view_port = unsafe { view_port_alloc() };
-    unsafe {
-        view_port_draw_callback_set(
-            view_port,
-            Some(gui_render),
-            (&raw const *state).cast_mut().cast(),
-        );
-        view_port_input_callback_set(
-            view_port,
-            Some(gui_input),
-            (&raw const *state).cast_mut().cast(),
-        );
-    }
+    let mut view_port = ViewPort::new();
+    view_port.set_draw_callback(|canvas| {
+        canvas.set_font(sys::FontPrimary);
+        canvas.draw_str_aligned(1, 1, sys::AlignLeft, sys::AlignTop, c"meow");
+    });
+    view_port.set_input_callback(|input| {
+        state
+            .event_queue
+            .put(*input, Duration::WAIT_FOREVER)
+            .unwrap();
+    });
 
-    let gui: *mut Gui = unsafe { furi_record_open(RECORD_GUI.as_ptr()) }.cast();
-    unsafe { gui_add_view_port(gui, view_port, GuiLayerFullscreen) };
+    let mut gui = Gui::new();
+    gui.add_view_port(&view_port, sys::GuiLayerFullscreen);
 
     loop {
         let event = state.event_queue.get(Duration::WAIT_FOREVER).unwrap();
-        if event.key == InputKeyBack {
+        if event.key == sys::InputKeyBack {
             break;
         }
 
-        unsafe { view_port_update(view_port) };
+        view_port.update();
     }
 
-    unsafe { view_port_enabled_set(view_port, false) };
-    unsafe { gui_remove_view_port(gui, view_port) };
-    unsafe { view_port_free(view_port) };
-    unsafe { furi_record_close(RECORD_GUI.as_ptr()) };
+    view_port.set_enabled(false);
 
     0
 }
