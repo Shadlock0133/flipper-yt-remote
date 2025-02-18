@@ -1,0 +1,23 @@
+cargo-features = ["different-binary-name"]
+
+[package]
+name = "flipper-yt-remote"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81.0"
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+[[bin]]
+name = "flipper-yt-remote"
+filename = "flipper-yt-remote.fap"
+bench = false
+test = false
+
+[dependencies]
+flipperzero = { version = "0.14.0" }
+flipperzero-sys = { version = "0.14.0" }
+flipperzero-rt = { version = "0.14.0" }
+flipperzero-alloc = { version = "0.14.0" }
