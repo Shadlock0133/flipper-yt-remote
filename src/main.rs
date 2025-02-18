@@ -10,7 +10,6 @@ extern crate flipperzero_alloc;
 
 mod gui;
 
-use alloc::boxed::Box;
 use core::ffi::CStr;
 
 use flipperzero::{
@@ -20,7 +19,7 @@ use flipperzero::{
 use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
-use gui::{Gui, ViewPort};
+use gui::{Gui, Orientation, ViewPort};
 
 manifest!(
     name = "YT Bluetooth Remote",
@@ -37,14 +36,17 @@ entry!(main);
 fn main(_args: Option<&CStr>) -> i32 {
     println!("Hello, Rust!");
 
-    let state = Box::new(State {
+    let state = State {
         event_queue: MessageQueue::new(8),
-    });
+    };
 
     let mut view_port = ViewPort::new();
+    view_port.set_orientation(Orientation::VerticalFlip);
     view_port.set_draw_callback(|canvas| {
         canvas.set_font(sys::FontPrimary);
-        canvas.draw_str_aligned(1, 1, sys::AlignLeft, sys::AlignTop, c"meow");
+        canvas.draw_str_aligned(0, 0, sys::AlignLeft, sys::AlignTop, c"meow");
+        canvas.set_font(sys::FontSecondary);
+        canvas.draw_str_aligned(0, 9, sys::AlignLeft, sys::AlignTop, c"foof");
     });
     view_port.set_input_callback(|input| {
         state

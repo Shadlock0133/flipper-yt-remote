@@ -92,6 +92,7 @@ impl<'a> ViewPort<'a> {
         }
         let state = self.draw_cb.insert(Box::new(f));
         unsafe {
+            // todo: state might become invalid after moving view port struct
             sys::view_port_draw_callback_set(
                 self.hnd.as_ptr(),
                 Some(draw_cb),
@@ -109,6 +110,7 @@ impl<'a> ViewPort<'a> {
         }
         let state = self.input_cb.insert(Box::new(f));
         unsafe {
+            // todo: see [set_draw_callback]
             sys::view_port_input_callback_set(
                 self.hnd.as_ptr(),
                 Some(input_cb),
@@ -119,9 +121,29 @@ impl<'a> ViewPort<'a> {
     pub fn set_enabled(&self, enabled: bool) {
         unsafe { sys::view_port_enabled_set(self.hnd.as_ptr(), enabled) };
     }
+    pub fn set_orientation(&self, orientation: Orientation) {
+        let orientation = match orientation {
+            Orientation::Horizontal => sys::ViewPortOrientationHorizontal,
+            Orientation::HorizontalFlip => {
+                sys::ViewPortOrientationHorizontalFlip
+            }
+            Orientation::Vertical => sys::ViewPortOrientationVertical,
+            Orientation::VerticalFlip => sys::ViewPortOrientationVerticalFlip,
+        };
+        unsafe {
+            sys::view_port_set_orientation(self.hnd.as_ptr(), orientation)
+        };
+    }
     pub fn update(&self) {
         unsafe { sys::view_port_update(self.hnd.as_ptr()) }
     }
+}
+
+pub enum Orientation {
+    Horizontal,
+    HorizontalFlip,
+    Vertical,
+    VerticalFlip,
 }
 
 pub struct Gui<'a> {
