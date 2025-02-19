@@ -23,7 +23,7 @@ manifest!(
     name = "YT Bluetooth Remote",
     app_version = 1,
     has_icon = true,
-    icon = "icon.icon",
+    icon = concat!(env!("OUT_DIR"), "/icon.icon"),
 );
 
 struct State {

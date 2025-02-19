@@ -25,3 +25,6 @@ flipperzero = { version = "0.14.0" }
 flipperzero-sys = { version = "0.14.0" }
 flipperzero-rt = { version = "0.14.0" }
 flipperzero-alloc = { version = "0.14.0" }
+
+[build-dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
