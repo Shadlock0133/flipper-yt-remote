@@ -4,7 +4,7 @@ use core::{
 };
 
 use alloc::boxed::Box;
-use flipperzero_sys as sys;
+use flipperzero_sys::{self as sys};
 
 pub const RECORD_GUI: &CStr = c"gui";
 
@@ -22,6 +22,66 @@ impl Canvas {
             Font::TotalNumber => sys::FontTotalNumber,
         };
         unsafe { sys::canvas_set_font(self.hnd.as_ptr(), font) };
+    }
+
+    pub fn draw_box(&self, x: i32, y: i32, width: usize, height: usize) {
+        unsafe { sys::canvas_draw_box(self.hnd.as_ptr(), x, y, width, height) };
+    }
+
+    pub fn draw_circle(&self, x: i32, y: i32, r: usize) {
+        unsafe { sys::canvas_draw_circle(self.hnd.as_ptr(), x, y, r) };
+    }
+
+    pub fn draw_disc(&self, x: i32, y: i32, r: usize) {
+        unsafe { sys::canvas_draw_disc(self.hnd.as_ptr(), x, y, r) };
+    }
+
+    pub fn draw_dot(&self, x: i32, y: i32) {
+        unsafe { sys::canvas_draw_dot(self.hnd.as_ptr(), x, y) };
+    }
+
+    pub fn draw_frame(&self, x: i32, y: i32, width: usize, height: usize) {
+        unsafe {
+            sys::canvas_draw_frame(self.hnd.as_ptr(), x, y, width, height)
+        };
+    }
+
+    pub fn draw_glyph(&self, x: i32, y: i32, ch: u16) {
+        unsafe { sys::canvas_draw_glyph(self.hnd.as_ptr(), x, y, ch) };
+    }
+
+    pub fn draw_line(&self, x1: i32, y1: i32, x2: i32, y2: i32) {
+        unsafe { sys::canvas_draw_line(self.hnd.as_ptr(), x1, y1, x2, y2) };
+    }
+
+    pub fn draw_rbox(
+        &self,
+        x: i32,
+        y: i32,
+        width: usize,
+        height: usize,
+        r: usize,
+    ) {
+        unsafe {
+            sys::canvas_draw_rbox(self.hnd.as_ptr(), x, y, width, height, r)
+        };
+    }
+
+    pub fn draw_rframe(
+        &self,
+        x: i32,
+        y: i32,
+        width: usize,
+        height: usize,
+        r: usize,
+    ) {
+        unsafe {
+            sys::canvas_draw_rframe(self.hnd.as_ptr(), x, y, width, height, r)
+        };
+    }
+
+    pub fn draw_str(&self, x: i32, y: i32, str: &CStr) {
+        unsafe { sys::canvas_draw_str(self.hnd.as_ptr(), x, y, str.as_ptr()) };
     }
 
     pub fn draw_str_aligned(
@@ -126,7 +186,7 @@ impl<'a> ViewPort<'a> {
                 sys::InputTypeShort => InputType::Short,
                 sys::InputTypeLong => InputType::Long,
                 sys::InputTypeRepeat => InputType::Repeat,
-                _ => InputType::Unknown,
+                sys::InputType(x) => InputType::Unknown(x),
             };
             let key = match input.key {
                 sys::InputKeyUp => InputKey::Up,
@@ -135,7 +195,7 @@ impl<'a> ViewPort<'a> {
                 sys::InputKeyLeft => InputKey::Left,
                 sys::InputKeyOk => InputKey::Ok,
                 sys::InputKeyBack => InputKey::Back,
-                _ => InputKey::Unknown,
+                sys::InputKey(x) => InputKey::Unknown(x),
             };
             let input = InputEvent { type_, key };
             let f = unsafe { &*_state.cast::<Box<InputCallback>>() };
@@ -188,7 +248,7 @@ pub enum InputType {
     Short,
     Long,
     Repeat,
-    Unknown,
+    Unknown(u8),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -199,7 +259,7 @@ pub enum InputKey {
     Left,
     Ok,
     Back,
-    Unknown,
+    Unknown(u8),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
