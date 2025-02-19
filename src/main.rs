@@ -19,7 +19,7 @@ use flipperzero::{
 use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
-use gui::{Gui, Orientation, ViewPort};
+use gui::{Font, Gui, InputEvent, InputKey, Orientation, ViewPort};
 
 manifest!(
     name = "YT Bluetooth Remote",
@@ -29,7 +29,7 @@ manifest!(
 );
 
 struct State {
-    event_queue: MessageQueue<sys::InputEvent>,
+    event_queue: MessageQueue<InputEvent>,
 }
 
 entry!(main);
@@ -43,15 +43,15 @@ fn main(_args: Option<&CStr>) -> i32 {
     let mut view_port = ViewPort::new();
     view_port.set_orientation(Orientation::VerticalFlip);
     view_port.set_draw_callback(|canvas| {
-        canvas.set_font(sys::FontPrimary);
+        canvas.set_font(Font::Primary);
         canvas.draw_str_aligned(0, 0, sys::AlignLeft, sys::AlignTop, c"meow");
-        canvas.set_font(sys::FontSecondary);
+        canvas.set_font(Font::Secondary);
         canvas.draw_str_aligned(0, 9, sys::AlignLeft, sys::AlignTop, c"foof");
     });
     view_port.set_input_callback(|input| {
         state
             .event_queue
-            .put(*input, Duration::WAIT_FOREVER)
+            .put(input, Duration::WAIT_FOREVER)
             .unwrap();
     });
 
@@ -60,7 +60,7 @@ fn main(_args: Option<&CStr>) -> i32 {
 
     loop {
         let event = state.event_queue.get(Duration::WAIT_FOREVER).unwrap();
-        if event.key == sys::InputKeyBack {
+        if event.key == InputKey::Back {
             break;
         }
 
