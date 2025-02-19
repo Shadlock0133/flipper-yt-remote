@@ -8,8 +8,6 @@ extern crate flipperzero_rt;
 extern crate alloc;
 extern crate flipperzero_alloc;
 
-mod gui;
-
 use core::ffi::CStr;
 
 use flipperzero::{
@@ -19,7 +17,7 @@ use flipperzero::{
 use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
-use gui::{Font, Gui, InputEvent, InputKey, InputType, Orientation, ViewPort};
+use flipper_yt_remote::gui::{Font, Gui, InputEvent, InputKey, InputType, Orientation, ViewPort};
 
 manifest!(
     name = "YT Bluetooth Remote",

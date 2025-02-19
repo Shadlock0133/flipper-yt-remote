@@ -103,6 +103,10 @@ impl Canvas {
             )
         };
     }
+
+    pub fn string_width(&self, str: &CStr) -> u16 {
+        unsafe { sys::canvas_string_width(self.hnd.as_ptr(), str.as_ptr()) }
+    }
 }
 
 #[derive(Clone, Copy)]
