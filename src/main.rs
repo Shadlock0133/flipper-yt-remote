@@ -17,7 +17,10 @@ use flipperzero::{
 use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
-use flipper_yt_remote::gui::{Font, Gui, InputEvent, InputKey, InputType, Orientation, ViewPort};
+use flipper_yt_remote::gui::{
+    view_port::ViewPort, Font, Gui, InputEvent, InputKey, InputType,
+    Orientation,
+};
 
 manifest!(
     name = "YT Bluetooth Remote",
@@ -41,12 +44,20 @@ fn main(_args: Option<&CStr>) -> i32 {
     let mut view_port = ViewPort::new();
     view_port.set_orientation(Orientation::VerticalFlip);
     view_port.set_draw_callback(|canvas| {
-        canvas.draw_rbox(0, 0, 20, 20, 2);
-        canvas.draw_rframe(0, 30, 20, 20, 2);
-        canvas.set_font(Font::Primary);
-        canvas.draw_str_aligned(2, 2, sys::AlignLeft, sys::AlignTop, c"meow");
-        canvas.set_font(Font::Secondary);
-        canvas.draw_str_aligned(2, 32, sys::AlignLeft, sys::AlignTop, c"foof");
+        // canvas.draw_rbox(0, 0, 20, 20, 2);
+        // canvas.draw_rframe(0, 30, 20, 20, 2);
+        for (i, f) in [
+            Font::Primary,
+            Font::Secondary,
+            Font::Keyboard,
+            Font::BigNumbers,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            canvas.set_font(f);
+            canvas.draw_str(0, 30 * i as i32 + 10, c"0123");
+        }
     });
     view_port.set_input_callback(|input| {
         state
@@ -55,7 +66,7 @@ fn main(_args: Option<&CStr>) -> i32 {
             .unwrap();
     });
 
-    let mut gui = Gui::new();
+    let mut gui = Gui::open();
     gui.add_view_port(&view_port, sys::GuiLayerFullscreen);
 
     loop {
