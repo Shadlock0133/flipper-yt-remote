@@ -50,16 +50,17 @@ impl<'a> ViewPort<'a> {
     }
 
     pub fn set_draw_callback(&mut self, f: impl Fn(&Canvas) + 'a) {
+        type CallbackStorage<'a> = Box<DrawCallback<'a>>;
         unsafe extern "C" fn draw_cb(
             canvas: *mut sys::Canvas,
-            _state: *mut c_void,
+            state: *mut c_void,
         ) {
             let canvas = unsafe { Canvas::from_ptr(canvas) };
-            let f = unsafe { &*_state.cast::<Box<DrawCallback>>() };
+            let f = unsafe { &*state.cast::<CallbackStorage>() };
             f(&canvas)
         }
         let state = self.draw_cb.insert(Box::new(Box::new(f)));
-        let state_ptr: *mut Box<DrawCallback> = &raw mut **state;
+        let state_ptr: *mut CallbackStorage = &raw mut **state;
         unsafe {
             sys::view_port_draw_callback_set(
                 self.as_ptr(),
@@ -69,9 +70,10 @@ impl<'a> ViewPort<'a> {
         }
     }
     pub fn set_input_callback(&mut self, f: impl Fn(InputEvent) + 'a) {
+        type CallbackStorage<'a> = Box<InputCallback<'a>>;
         unsafe extern "C" fn input_cb(
             input: *mut sys::InputEvent,
-            _state: *mut c_void,
+            state: *mut c_void,
         ) {
             let input = unsafe { *input };
             let type_ = match input.type_ {
@@ -92,11 +94,11 @@ impl<'a> ViewPort<'a> {
                 sys::InputKey(x) => InputKey::Unknown(x),
             };
             let input = InputEvent { type_, key };
-            let f = unsafe { &*_state.cast::<Box<InputCallback>>() };
+            let f = unsafe { &*state.cast::<CallbackStorage>() };
             f(input)
         }
         let state = self.input_cb.insert(Box::new(Box::new(f)));
-        let state_ptr: *mut Box<InputCallback> = &raw mut **state;
+        let state_ptr: *mut CallbackStorage = &raw mut **state;
         unsafe {
             sys::view_port_input_callback_set(
                 self.as_ptr(),
