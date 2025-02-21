@@ -4,7 +4,7 @@ use image::{Rgb, RgbImage};
 
 fn rgb_to_mono(image: &RgbImage) -> Vec<u8> {
     let (width, height) = image.dimensions();
-    let row_size = (width + 7) / 8;
+    let row_size = width.div_ceil(8);
 
     let mut res = vec![0; (row_size * height) as usize + 1];
 

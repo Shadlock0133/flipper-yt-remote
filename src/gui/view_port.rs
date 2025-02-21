@@ -3,9 +3,7 @@ use core::{ffi::c_void, ptr::NonNull};
 use alloc::boxed::Box;
 use flipperzero_sys as sys;
 
-use crate::gui::{
-    canvas::Canvas, InputEvent, InputKey, InputType, Orientation,
-};
+use super::{InputEvent, InputKey, InputType, Orientation, canvas::Canvas};
 
 type DrawCallback<'a> = dyn Fn(&Canvas) + 'a;
 type InputCallback<'a> = dyn Fn(InputEvent) + 'a;
@@ -17,19 +15,20 @@ pub struct ViewPort<'a> {
     input_cb: Option<ThinBox<InputCallback<'a>>>,
 }
 
-impl<'a> Default for ViewPort<'a> {
+impl Default for ViewPort<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a> Drop for ViewPort<'a> {
+impl Drop for ViewPort<'_> {
     fn drop(&mut self) {
         unsafe { self.free() }
     }
 }
 
 impl<'a> ViewPort<'a> {
+    #[doc(alias = "view_port_alloc")]
     pub fn new() -> Self {
         let hnd = unsafe { NonNull::new_unchecked(sys::view_port_alloc()) };
         Self {
@@ -69,6 +68,7 @@ impl<'a> ViewPort<'a> {
             )
         }
     }
+
     pub fn set_input_callback(&mut self, f: impl Fn(InputEvent) + 'a) {
         type CallbackStorage<'a> = Box<InputCallback<'a>>;
         unsafe extern "C" fn input_cb(
@@ -107,9 +107,11 @@ impl<'a> ViewPort<'a> {
             )
         }
     }
+
     pub fn set_enabled(&self, enabled: bool) {
         unsafe { sys::view_port_enabled_set(self.as_ptr(), enabled) };
     }
+
     pub fn set_orientation(&self, orientation: Orientation) {
         let orientation = match orientation {
             Orientation::Horizontal => sys::ViewPortOrientationHorizontal,
@@ -121,6 +123,7 @@ impl<'a> ViewPort<'a> {
         };
         unsafe { sys::view_port_set_orientation(self.as_ptr(), orientation) };
     }
+
     pub fn update(&self) {
         unsafe { sys::view_port_update(self.as_ptr()) }
     }

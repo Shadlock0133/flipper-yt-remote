@@ -2,7 +2,7 @@ use core::{ffi::CStr, ptr::NonNull};
 
 use flipperzero_sys as sys;
 
-use crate::gui::Font;
+use super::Font;
 
 pub struct Canvas {
     hnd: NonNull<sys::Canvas>,
@@ -71,7 +71,8 @@ impl Canvas {
         unsafe { sys::canvas_draw_line(self.as_ptr(), x1, y1, x2, y2) };
     }
 
-    pub fn draw_rbox(
+    #[doc(alias = "draw_rbox")]
+    pub fn draw_rounded_box(
         &self,
         x: i32,
         y: i32,
@@ -82,7 +83,8 @@ impl Canvas {
         unsafe { sys::canvas_draw_rbox(self.as_ptr(), x, y, width, height, r) };
     }
 
-    pub fn draw_rframe(
+    #[doc(alias = "draw_rframe")]
+    pub fn draw_rounded_frame(
         &self,
         x: i32,
         y: i32,

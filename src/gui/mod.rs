@@ -82,7 +82,7 @@ impl<'a> Gui<'a> {
     }
 }
 
-impl<'a> Drop for Gui<'a> {
+impl Drop for Gui<'_> {
     fn drop(&mut self) {
         if let Some(view_port) = self.view_port {
             unsafe {

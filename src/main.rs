@@ -44,8 +44,8 @@ fn main(_args: Option<&CStr>) -> i32 {
     let mut view_port = ViewPort::new();
     view_port.set_orientation(Orientation::VerticalFlip);
     view_port.set_draw_callback(|canvas| {
-        // canvas.draw_rbox(0, 0, 20, 20, 2);
-        // canvas.draw_rframe(0, 30, 20, 20, 2);
+        canvas.draw_rounded_box(0, 0, 20, 20, 2);
+        canvas.draw_rounded_frame(0, 30, 20, 20, 2);
         for (i, f) in [
             Font::Primary,
             Font::Secondary,
