@@ -2,9 +2,7 @@
 mod sys;
 
 use core::{
-    ffi::{CStr, c_void},
-    mem::ManuallyDrop,
-    ptr::{NonNull, null_mut},
+    ffi::{c_void, CStr}, mem::ManuallyDrop, ops::BitOr, ptr::{null_mut, NonNull}
 };
 
 use alloc::boxed::Box;
@@ -227,6 +225,35 @@ impl BleProfileBase<'_> {
 impl Drop for BleProfileBase<'_> {
     fn drop(&mut self) {
         let _ = unsafe { self.raw_restore_default_profile() };
+    }
+}
+
+bitflags::bitflags! {
+    pub struct KeyMods: u16 {
+        const LeftCtrl = (1 << 8);
+        const LeftShift = (1 << 9);
+        const LeftAlt = (1 << 10);
+        const LeftGui = (1 << 11);
+        const RightCtrl = (1 << 12);
+        const RightShift = (1 << 13);
+        const RightAlt = (1 << 14);
+        const RightGui = (1 << 15);
+    }
+}
+
+impl BitOr<KeyMods> for Key {
+    type Output = Key;
+
+    fn bitor(self, rhs: KeyMods) -> Self::Output {
+        Key::Other(self.discriminant() | rhs.bits())
+    }
+}
+
+impl BitOr<Key> for KeyMods {
+    type Output = Key;
+
+    fn bitor(self, rhs: Key) -> Self::Output {
+        Key::Other(self.bits() | rhs.discriminant())
     }
 }
 

@@ -170,6 +170,7 @@ name = "flipper-yt-remote"
 version = "0.1.0"
 dependencies = [
  "bindgen",
+ "bitflags 2.8.0",
  "cc",
  "flipperzero",
  "flipperzero-alloc",

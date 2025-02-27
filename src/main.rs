@@ -21,7 +21,7 @@ use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
 use flipper_yt_remote::{
-    bt::{Bt, BtStatus, Key},
+    bt::{Bt, BtStatus, Key, KeyMods},
     gui::{
         view_port::ViewPort, Font, Gui, InputEvent, InputKey, InputType, Orientation
     },
@@ -122,16 +122,12 @@ fn main(_args: Option<&CStr>) -> i32 {
                 let _ = bt_hid_profile.key_release(Key::RightArrow);
             }
             (InputKey::Left, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::LeftShift);
-                let _ = bt_hid_profile.key_press(Key::Comma);
-                let _ = bt_hid_profile.key_release(Key::Comma);
-                let _ = bt_hid_profile.key_release(Key::LeftShift);
+                let _ = bt_hid_profile.key_press(Key::Comma | KeyMods::LeftShift);
+                let _ = bt_hid_profile.key_release(Key::Comma | KeyMods::LeftShift);
             }
             (InputKey::Right, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::LeftShift);
-                let _ = bt_hid_profile.key_press(Key::Dot);
-                let _ = bt_hid_profile.key_release(Key::Dot);
-                let _ = bt_hid_profile.key_release(Key::LeftShift);
+                let _ = bt_hid_profile.key_press(Key::Dot | KeyMods::LeftShift);
+                let _ = bt_hid_profile.key_release(Key::Dot | KeyMods::LeftShift);
             }
             (InputKey::Up, InputType::Short) => {
                 let _ = bt_hid_profile.key_press(Key::Dot);
@@ -142,12 +138,12 @@ fn main(_args: Option<&CStr>) -> i32 {
                 let _ = bt_hid_profile.key_release(Key::Comma);
             }
             (InputKey::Up, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::VolumeUp);
-                let _ = bt_hid_profile.key_release(Key::VolumeUp);
+                let _ = bt_hid_profile.consumer_key_press(0xE9);
+                let _ = bt_hid_profile.consumer_key_release(0xE9);
             }
             (InputKey::Down, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::VolumeDown);
-                let _ = bt_hid_profile.key_release(Key::VolumeDown);
+                let _ = bt_hid_profile.consumer_key_press(0xEA);
+                let _ = bt_hid_profile.consumer_key_release(0xEA);
             }
             _ => (),
         }
