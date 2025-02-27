@@ -23,7 +23,8 @@ use flipperzero_sys as sys;
 use flipper_yt_remote::{
     bt::{Bt, BtStatus, Key, KeyMods},
     gui::{
-        view_port::ViewPort, Font, Gui, InputEvent, InputKey, InputType, Orientation
+        Font, Gui, InputEvent, InputKey, InputType, Orientation,
+        view_port::ViewPort,
     },
 };
 
@@ -122,12 +123,15 @@ fn main(_args: Option<&CStr>) -> i32 {
                 let _ = bt_hid_profile.key_release(Key::RightArrow);
             }
             (InputKey::Left, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::Comma | KeyMods::LeftShift);
-                let _ = bt_hid_profile.key_release(Key::Comma | KeyMods::LeftShift);
+                let _ =
+                    bt_hid_profile.key_press(Key::Comma | KeyMods::LeftShift);
+                let _ =
+                    bt_hid_profile.key_release(Key::Comma | KeyMods::LeftShift);
             }
             (InputKey::Right, InputType::Long) => {
                 let _ = bt_hid_profile.key_press(Key::Dot | KeyMods::LeftShift);
-                let _ = bt_hid_profile.key_release(Key::Dot | KeyMods::LeftShift);
+                let _ =
+                    bt_hid_profile.key_release(Key::Dot | KeyMods::LeftShift);
             }
             (InputKey::Up, InputType::Short) => {
                 let _ = bt_hid_profile.key_press(Key::Dot);

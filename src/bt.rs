@@ -2,7 +2,10 @@
 mod sys;
 
 use core::{
-    ffi::{c_void, CStr}, mem::ManuallyDrop, ops::BitOr, ptr::{null_mut, NonNull}
+    ffi::{CStr, c_void},
+    mem::ManuallyDrop,
+    ops::BitOr,
+    ptr::{NonNull, null_mut},
 };
 
 use alloc::boxed::Box;

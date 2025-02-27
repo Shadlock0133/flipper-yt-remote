@@ -2,8 +2,8 @@
 
 extern crate alloc;
 
-pub mod gui;
 pub mod bt;
+pub mod gui;
 
 #[derive(Debug)]
 pub struct Error;
