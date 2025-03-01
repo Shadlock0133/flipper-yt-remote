@@ -10,7 +10,7 @@ extern crate flipperzero_alloc;
 
 use core::{
     ffi::CStr,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU8, Ordering},
 };
 
 use flipperzero::{
@@ -38,6 +38,7 @@ manifest!(
 struct State {
     event_queue: MessageQueue<InputEvent>,
     bt_connected: AtomicBool,
+    mode: AtomicU8,
 }
 
 entry!(main);
@@ -47,6 +48,7 @@ fn main(_args: Option<&CStr>) -> i32 {
     let state = State {
         event_queue: MessageQueue::new(8),
         bt_connected: AtomicBool::new(false),
+        mode: AtomicU8::new(0),
     };
 
     let mut bt = Bt::open();
@@ -69,27 +71,25 @@ fn main(_args: Option<&CStr>) -> i32 {
     let mut view_port = ViewPort::new();
     view_port.set_orientation(Orientation::VerticalFlip);
     view_port.set_draw_callback(|canvas| {
-        // canvas.draw_rounded_box(0, 0, 20, 20, 2);
-        // canvas.draw_rounded_frame(0, 30, 20, 20, 2);
-        // for (i, f) in [
-        //     Font::Primary,
-        //     Font::Secondary,
-        //     Font::Keyboard,
-        //     Font::BigNumbers,
-        // ]
-        // .into_iter()
-        // .enumerate()
-        // {
-        //     canvas.set_font(f);
-        //     canvas.draw_str(0, 30 * i as i32 + 10, c"0123");
-        // }
-        let text = if state.bt_connected.load(Ordering::Relaxed) {
-            c"on"
-        } else {
-            c"off"
+        let bt_connected = state.bt_connected.load(Ordering::Relaxed);
+        let mode = match state.mode.load(Ordering::Relaxed) {
+            0 => Mode::Basic,
+            1 => Mode::Mouse,
+            _ => unreachable!(),
         };
-        canvas.set_font(Font::Primary);
-        canvas.draw_str(10, 10, text);
+        let text = if bt_connected {
+            c"bluetooth: on"
+        } else {
+            c"bluetooth: off"
+        };
+        canvas.set_font(Font::Secondary);
+        canvas.draw_str_aligned(0, 0, sys::AlignLeft, sys::AlignTop, text);
+
+        let text = match mode {
+            Mode::Basic => c"basic mode",
+            Mode::Mouse => c"mouse mode",
+        };
+        canvas.draw_str_aligned(0, 10, sys::AlignLeft, sys::AlignTop, text);
     });
     view_port.set_input_callback(|input| {
         state
@@ -101,55 +101,109 @@ fn main(_args: Option<&CStr>) -> i32 {
     let mut gui = Gui::open();
     gui.add_view_port(&view_port, sys::GuiLayerFullscreen);
 
+    #[repr(u8)]
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Mode {
+        Basic = 0,
+        Mouse = 1,
+    }
+
+    let mut mode = Mode::Basic;
+
     loop {
+        state.mode.store(mode as u8, Ordering::Relaxed);
+        let connected = state.bt_connected.load(Ordering::Relaxed);
         let event = state.event_queue.get(Duration::WAIT_FOREVER).unwrap();
-        match (event.key, event.type_) {
-            (InputKey::Back, InputType::Short) => bt.forget_bonded_devices(),
-            (InputKey::Back, InputType::Long) => break,
-            (InputKey::Ok, InputType::Short) => {
-                let _ = bt_hid_profile.key_press(Key::Spacebar);
-                let _ = bt_hid_profile.key_release(Key::Spacebar);
+        if let Mode::Basic = mode {
+            match (event.key, event.type_) {
+                // (InputKey::Back, InputType::Short) => bt.forget_bonded_devices(),
+                (InputKey::Back, InputType::Short) => mode = Mode::Mouse,
+                (InputKey::Back, InputType::Long) => break,
+                _ => (),
             }
-            (InputKey::Ok, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::F);
-                let _ = bt_hid_profile.key_release(Key::F);
+            if connected {
+                match (event.key, event.type_) {
+                    (InputKey::Ok, InputType::Short) => {
+                        let _ = bt_hid_profile.key_press(Key::Spacebar);
+                    }
+                    (InputKey::Ok, InputType::Long) => {
+                        let _ = bt_hid_profile.key_press(Key::F);
+                    }
+                    (InputKey::Left, InputType::Short) => {
+                        let _ = bt_hid_profile.key_press(Key::LeftArrow);
+                    }
+                    (InputKey::Right, InputType::Short) => {
+                        let _ = bt_hid_profile.key_press(Key::RightArrow);
+                    }
+                    (InputKey::Left, InputType::Long) => {
+                        let _ = bt_hid_profile
+                            .key_press(Key::Comma | KeyMods::LeftShift);
+                    }
+                    (InputKey::Right, InputType::Long) => {
+                        let _ = bt_hid_profile
+                            .key_press(Key::Dot | KeyMods::LeftShift);
+                    }
+                    (InputKey::Up, InputType::Short) => {
+                        let _ = bt_hid_profile.key_press(Key::Dot);
+                    }
+                    (InputKey::Down, InputType::Short) => {
+                        let _ = bt_hid_profile.key_press(Key::Comma);
+                    }
+                    (InputKey::Up, InputType::Long) => {
+                        let _ = bt_hid_profile.consumer_key_press(0xE9);
+                    }
+                    (InputKey::Down, InputType::Long) => {
+                        let _ = bt_hid_profile.consumer_key_press(0xEA);
+                    }
+                    _ => (),
+                }
+                let _ = bt_hid_profile.key_release_all();
+                let _ = bt_hid_profile.consumer_key_release_all();
             }
-            (InputKey::Left, InputType::Short) => {
-                let _ = bt_hid_profile.key_press(Key::LeftArrow);
-                let _ = bt_hid_profile.key_release(Key::LeftArrow);
+        } else if let Mode::Mouse = mode {
+            match (event.key, event.type_) {
+                // (InputKey::Back, InputType::Short) => bt.forget_bonded_devices(),
+                (InputKey::Back, InputType::Short) => mode = Mode::Basic,
+                (InputKey::Back, InputType::Long) => break,
+                _ => (),
             }
-            (InputKey::Right, InputType::Short) => {
-                let _ = bt_hid_profile.key_press(Key::RightArrow);
-                let _ = bt_hid_profile.key_release(Key::RightArrow);
+            if connected {
+                match (event.key, event.type_) {
+                    (InputKey::Ok, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_press(1);
+                    }
+                    (InputKey::Ok, InputType::Release) => {
+                        let _ = bt_hid_profile.mouse_release(1);
+                    }
+                    (InputKey::Left, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_move(-5, 0);
+                    }
+                    (InputKey::Right, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_move(5, 0);
+                    }
+                    (InputKey::Up, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_move(0, -5);
+                    }
+                    (InputKey::Down, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_move(0, 5);
+                    }
+                    (InputKey::Left, InputType::Repeat) => {
+                        let _ = bt_hid_profile.mouse_move(-20, 0);
+                    }
+                    (InputKey::Right, InputType::Repeat) => {
+                        let _ = bt_hid_profile.mouse_move(20, 0);
+                    }
+                    (InputKey::Up, InputType::Repeat) => {
+                        let _ = bt_hid_profile.mouse_move(0, -20);
+                    }
+                    (InputKey::Down, InputType::Repeat) => {
+                        let _ = bt_hid_profile.mouse_move(0, 20);
+                    }
+                    _ => (),
+                }
             }
-            (InputKey::Left, InputType::Long) => {
-                let _ =
-                    bt_hid_profile.key_press(Key::Comma | KeyMods::LeftShift);
-                let _ =
-                    bt_hid_profile.key_release(Key::Comma | KeyMods::LeftShift);
-            }
-            (InputKey::Right, InputType::Long) => {
-                let _ = bt_hid_profile.key_press(Key::Dot | KeyMods::LeftShift);
-                let _ =
-                    bt_hid_profile.key_release(Key::Dot | KeyMods::LeftShift);
-            }
-            (InputKey::Up, InputType::Short) => {
-                let _ = bt_hid_profile.key_press(Key::Dot);
-                let _ = bt_hid_profile.key_release(Key::Dot);
-            }
-            (InputKey::Down, InputType::Short) => {
-                let _ = bt_hid_profile.key_press(Key::Comma);
-                let _ = bt_hid_profile.key_release(Key::Comma);
-            }
-            (InputKey::Up, InputType::Long) => {
-                let _ = bt_hid_profile.consumer_key_press(0xE9);
-                let _ = bt_hid_profile.consumer_key_release(0xE9);
-            }
-            (InputKey::Down, InputType::Long) => {
-                let _ = bt_hid_profile.consumer_key_press(0xEA);
-                let _ = bt_hid_profile.consumer_key_release(0xEA);
-            }
-            _ => (),
+        } else {
+            unreachable!()
         }
 
         view_port.update();

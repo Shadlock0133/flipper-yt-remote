@@ -1,11 +1,13 @@
-use core::{ffi::CStr, ptr::NonNull};
+use core::{ffi::CStr, marker::PhantomPinned, ptr::NonNull};
 
 use flipperzero_sys as sys;
 
 use super::Font;
 
+#[repr(transparent)]
 pub struct Canvas {
     hnd: NonNull<sys::Canvas>,
+    _pinned: PhantomPinned,
 }
 
 impl Canvas {
@@ -14,6 +16,7 @@ impl Canvas {
     pub unsafe fn from_ptr(canvas: *mut sys::Canvas) -> Self {
         Self {
             hnd: unsafe { NonNull::new_unchecked(canvas) },
+            _pinned: PhantomPinned
         }
     }
 
