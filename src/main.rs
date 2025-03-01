@@ -121,46 +121,42 @@ fn main(_args: Option<&CStr>) -> i32 {
         }
 
         if let Mode::Basic = mode {
-            match (event.key, event.type_) {
-                (InputKey::Back, InputType::Short) => mode = Mode::Mouse,
-                (InputKey::Ok, InputType::Short) => {
-                    let _ = bt_hid_profile.key_press(Key::Spacebar);
-                }
-                (InputKey::Ok, InputType::Long) => {
-                    let _ = bt_hid_profile.key_press(Key::F);
-                }
-                (InputKey::Left, InputType::Short) => {
-                    let _ = bt_hid_profile.key_press(Key::LeftArrow);
-                }
-                (InputKey::Right, InputType::Short) => {
-                    let _ = bt_hid_profile.key_press(Key::RightArrow);
-                }
+            if let (InputKey::Back, InputType::Short) = (event.key, event.type_)
+            {
+                mode = Mode::Mouse
+            }
+            let key = match (event.key, event.type_) {
+                (InputKey::Ok, InputType::Short) => Some(Key::Spacebar),
+                (InputKey::Ok, InputType::Long) => Some(Key::F),
+                (InputKey::Left, InputType::Short) => Some(Key::LeftArrow),
+                (InputKey::Right, InputType::Short) => Some(Key::RightArrow),
                 (InputKey::Left, InputType::Long) => {
-                    let _ = bt_hid_profile
-                        .key_press(Key::Comma | KeyMods::LeftShift);
+                    Some(Key::Comma | KeyMods::LeftShift)
                 }
                 (InputKey::Right, InputType::Long) => {
-                    let _ =
-                        bt_hid_profile.key_press(Key::Dot | KeyMods::LeftShift);
+                    Some(Key::Dot | KeyMods::LeftShift)
                 }
-                (InputKey::Up, InputType::Short) => {
-                    let _ = bt_hid_profile.key_press(Key::Dot);
-                }
-                (InputKey::Down, InputType::Short) => {
-                    let _ = bt_hid_profile.key_press(Key::Comma);
-                }
+                (InputKey::Up, InputType::Short) => Some(Key::Dot),
+                (InputKey::Down, InputType::Short) => Some(Key::Comma),
+                _ => None,
+            };
+            if let Some(key) = key {
+                let _ = bt_hid_profile.key_press(key);
+                let _ = bt_hid_profile.key_release(key);
+            }
+            let consumer_key = match (event.key, event.type_) {
                 (InputKey::Up, InputType::Long) => {
-                    let _ = bt_hid_profile
-                        .consumer_key_press(ConsumerKey::VolumeIncrease);
+                    Some(ConsumerKey::VolumeIncrease)
                 }
                 (InputKey::Down, InputType::Long) => {
-                    let _ = bt_hid_profile
-                        .consumer_key_press(ConsumerKey::VolumeDecrease);
+                    Some(ConsumerKey::VolumeDecrease)
                 }
-                _ => (),
+                _ => None,
+            };
+            if let Some(button) = consumer_key {
+                let _ = bt_hid_profile.consumer_key_press(button);
+                let _ = bt_hid_profile.consumer_key_release(button);
             }
-            let _ = bt_hid_profile.key_release_all();
-            let _ = bt_hid_profile.consumer_key_release_all();
         } else if let Mode::Mouse = mode {
             match (event.key, event.type_) {
                 (InputKey::Back, InputType::Short) => mode = Mode::Basic,
@@ -170,31 +166,21 @@ fn main(_args: Option<&CStr>) -> i32 {
                 (InputKey::Ok, InputType::Release) => {
                     let _ = bt_hid_profile.mouse_release(MouseButton::M1);
                 }
-                (InputKey::Left, InputType::Press) => {
-                    let _ = bt_hid_profile.mouse_move(-5, 0);
-                }
-                (InputKey::Right, InputType::Press) => {
-                    let _ = bt_hid_profile.mouse_move(5, 0);
-                }
-                (InputKey::Up, InputType::Press) => {
-                    let _ = bt_hid_profile.mouse_move(0, -5);
-                }
-                (InputKey::Down, InputType::Press) => {
-                    let _ = bt_hid_profile.mouse_move(0, 5);
-                }
-                (InputKey::Left, InputType::Repeat) => {
-                    let _ = bt_hid_profile.mouse_move(-20, 0);
-                }
-                (InputKey::Right, InputType::Repeat) => {
-                    let _ = bt_hid_profile.mouse_move(20, 0);
-                }
-                (InputKey::Up, InputType::Repeat) => {
-                    let _ = bt_hid_profile.mouse_move(0, -20);
-                }
-                (InputKey::Down, InputType::Repeat) => {
-                    let _ = bt_hid_profile.mouse_move(0, 20);
-                }
                 _ => (),
+            }
+            let dv = match (event.key, event.type_) {
+                (InputKey::Left, InputType::Press) => Some((-5, 0)),
+                (InputKey::Right, InputType::Press) => Some((5, 0)),
+                (InputKey::Up, InputType::Press) => Some((0, -5)),
+                (InputKey::Down, InputType::Press) => Some((0, 5)),
+                (InputKey::Left, InputType::Repeat) => Some((-20, 0)),
+                (InputKey::Right, InputType::Repeat) => Some((20, 0)),
+                (InputKey::Up, InputType::Repeat) => Some((0, -20)),
+                (InputKey::Down, InputType::Repeat) => Some((0, 20)),
+                _ => None,
+            };
+            if let Some((dx, dy)) = dv {
+                let _ = bt_hid_profile.mouse_move(dx, dy);
             }
         } else {
             unreachable!()

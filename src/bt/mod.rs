@@ -277,6 +277,7 @@ impl BitOr<Key> for KeyMods {
 }
 
 #[repr(u16)]
+#[derive(Clone, Copy)]
 pub enum Key {
     A = 0x04,
     B,
@@ -378,6 +379,7 @@ impl Key {
 }
 
 #[repr(u16)]
+#[derive(Clone, Copy)]
 pub enum ConsumerKey {
     VolumeIncrease = 0xE9,
     VolumeDecrease = 0xEA,
@@ -394,6 +396,7 @@ impl ConsumerKey {
 }
 
 #[repr(i8)]
+#[derive(Clone, Copy)]
 pub enum MouseButton {
     M1 = 0x01,
     M2 = 0x02,
