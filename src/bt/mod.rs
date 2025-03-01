@@ -172,16 +172,25 @@ impl BleProfileBase<'_> {
         res.then_some(()).ok_or(Error)
     }
 
-    pub fn consumer_key_press(&self, button: u16) -> Result<(), Error> {
+    pub fn consumer_key_press(&self, button: ConsumerKey) -> Result<(), Error> {
         let res = unsafe {
-            sys::ble_profile_hid_consumer_key_press(self.as_ptr(), button)
+            sys::ble_profile_hid_consumer_key_press(
+                self.as_ptr(),
+                button.discriminant(),
+            )
         };
         res.then_some(()).ok_or(Error)
     }
 
-    pub fn consumer_key_release(&self, button: u16) -> Result<(), Error> {
+    pub fn consumer_key_release(
+        &self,
+        button: ConsumerKey,
+    ) -> Result<(), Error> {
         let res = unsafe {
-            sys::ble_profile_hid_consumer_key_release(self.as_ptr(), button)
+            sys::ble_profile_hid_consumer_key_release(
+                self.as_ptr(),
+                button.discriminant(),
+            )
         };
         res.then_some(()).ok_or(Error)
     }
@@ -193,15 +202,22 @@ impl BleProfileBase<'_> {
         res.then_some(()).ok_or(Error)
     }
 
-    pub fn mouse_press(&self, button: i8) -> Result<(), Error> {
-        let res =
-            unsafe { sys::ble_profile_hid_mouse_press(self.as_ptr(), button) };
+    pub fn mouse_press(&self, button: MouseButton) -> Result<(), Error> {
+        let res = unsafe {
+            sys::ble_profile_hid_mouse_press(
+                self.as_ptr(),
+                button.discriminant(),
+            )
+        };
         res.then_some(()).ok_or(Error)
     }
 
-    pub fn mouse_release(&self, button: i8) -> Result<(), Error> {
+    pub fn mouse_release(&self, button: MouseButton) -> Result<(), Error> {
         let res = unsafe {
-            sys::ble_profile_hid_mouse_release(self.as_ptr(), button)
+            sys::ble_profile_hid_mouse_release(
+                self.as_ptr(),
+                button.discriminant(),
+            )
         };
         res.then_some(()).ok_or(Error)
     }
@@ -355,8 +371,43 @@ pub enum Key {
 impl Key {
     fn discriminant(&self) -> u16 {
         match self {
-            Key::Other(other) => *other,
+            Self::Other(other) => *other,
             _ => unsafe { *<*const _>::from(self).cast::<u16>() },
+        }
+    }
+}
+
+#[repr(u16)]
+pub enum ConsumerKey {
+    VolumeIncrease = 0xE9,
+    VolumeDecrease = 0xEA,
+    Other(u16),
+}
+
+impl ConsumerKey {
+    fn discriminant(&self) -> u16 {
+        match self {
+            Self::Other(other) => *other,
+            _ => unsafe { *<*const _>::from(self).cast::<u16>() },
+        }
+    }
+}
+
+#[repr(i8)]
+pub enum MouseButton {
+    M1 = 0x01,
+    M2 = 0x02,
+    M3 = 0x03,
+    M4 = 0x04,
+    M5 = 0x05,
+    Other(i8),
+}
+
+impl MouseButton {
+    fn discriminant(&self) -> i8 {
+        match self {
+            Self::Other(other) => *other,
+            _ => unsafe { *<*const _>::from(self).cast::<i8>() },
         }
     }
 }

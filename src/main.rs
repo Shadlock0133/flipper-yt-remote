@@ -21,7 +21,7 @@ use flipperzero_rt::{entry, manifest};
 use flipperzero_sys as sys;
 
 use flipper_yt_remote::{
-    bt::{Bt, BtStatus, Key, KeyMods},
+    bt::{Bt, BtStatus, ConsumerKey, Key, KeyMods, MouseButton},
     gui::{
         Font, Gui, InputEvent, InputKey, InputType, Orientation,
         view_port::ViewPort,
@@ -110,97 +110,91 @@ fn main(_args: Option<&CStr>) -> i32 {
 
     let mut mode = Mode::Basic;
 
+    // TODO: re-add unpairing
+    // TODO: mouse acceleration
+    // TODO: better text align enum
     loop {
         state.mode.store(mode as u8, Ordering::Relaxed);
-        let connected = state.bt_connected.load(Ordering::Relaxed);
         let event = state.event_queue.get(Duration::WAIT_FOREVER).unwrap();
+        if let (InputKey::Back, InputType::Long) = (event.key, event.type_) {
+            break;
+        }
+
         if let Mode::Basic = mode {
             match (event.key, event.type_) {
-                // (InputKey::Back, InputType::Short) => bt.forget_bonded_devices(),
                 (InputKey::Back, InputType::Short) => mode = Mode::Mouse,
-                (InputKey::Back, InputType::Long) => break,
+                (InputKey::Ok, InputType::Short) => {
+                    let _ = bt_hid_profile.key_press(Key::Spacebar);
+                }
+                (InputKey::Ok, InputType::Long) => {
+                    let _ = bt_hid_profile.key_press(Key::F);
+                }
+                (InputKey::Left, InputType::Short) => {
+                    let _ = bt_hid_profile.key_press(Key::LeftArrow);
+                }
+                (InputKey::Right, InputType::Short) => {
+                    let _ = bt_hid_profile.key_press(Key::RightArrow);
+                }
+                (InputKey::Left, InputType::Long) => {
+                    let _ = bt_hid_profile
+                        .key_press(Key::Comma | KeyMods::LeftShift);
+                }
+                (InputKey::Right, InputType::Long) => {
+                    let _ =
+                        bt_hid_profile.key_press(Key::Dot | KeyMods::LeftShift);
+                }
+                (InputKey::Up, InputType::Short) => {
+                    let _ = bt_hid_profile.key_press(Key::Dot);
+                }
+                (InputKey::Down, InputType::Short) => {
+                    let _ = bt_hid_profile.key_press(Key::Comma);
+                }
+                (InputKey::Up, InputType::Long) => {
+                    let _ = bt_hid_profile
+                        .consumer_key_press(ConsumerKey::VolumeIncrease);
+                }
+                (InputKey::Down, InputType::Long) => {
+                    let _ = bt_hid_profile
+                        .consumer_key_press(ConsumerKey::VolumeDecrease);
+                }
                 _ => (),
             }
-            if connected {
-                match (event.key, event.type_) {
-                    (InputKey::Ok, InputType::Short) => {
-                        let _ = bt_hid_profile.key_press(Key::Spacebar);
-                    }
-                    (InputKey::Ok, InputType::Long) => {
-                        let _ = bt_hid_profile.key_press(Key::F);
-                    }
-                    (InputKey::Left, InputType::Short) => {
-                        let _ = bt_hid_profile.key_press(Key::LeftArrow);
-                    }
-                    (InputKey::Right, InputType::Short) => {
-                        let _ = bt_hid_profile.key_press(Key::RightArrow);
-                    }
-                    (InputKey::Left, InputType::Long) => {
-                        let _ = bt_hid_profile
-                            .key_press(Key::Comma | KeyMods::LeftShift);
-                    }
-                    (InputKey::Right, InputType::Long) => {
-                        let _ = bt_hid_profile
-                            .key_press(Key::Dot | KeyMods::LeftShift);
-                    }
-                    (InputKey::Up, InputType::Short) => {
-                        let _ = bt_hid_profile.key_press(Key::Dot);
-                    }
-                    (InputKey::Down, InputType::Short) => {
-                        let _ = bt_hid_profile.key_press(Key::Comma);
-                    }
-                    (InputKey::Up, InputType::Long) => {
-                        let _ = bt_hid_profile.consumer_key_press(0xE9);
-                    }
-                    (InputKey::Down, InputType::Long) => {
-                        let _ = bt_hid_profile.consumer_key_press(0xEA);
-                    }
-                    _ => (),
-                }
-                let _ = bt_hid_profile.key_release_all();
-                let _ = bt_hid_profile.consumer_key_release_all();
-            }
+            let _ = bt_hid_profile.key_release_all();
+            let _ = bt_hid_profile.consumer_key_release_all();
         } else if let Mode::Mouse = mode {
             match (event.key, event.type_) {
-                // (InputKey::Back, InputType::Short) => bt.forget_bonded_devices(),
                 (InputKey::Back, InputType::Short) => mode = Mode::Basic,
-                (InputKey::Back, InputType::Long) => break,
-                _ => (),
-            }
-            if connected {
-                match (event.key, event.type_) {
-                    (InputKey::Ok, InputType::Press) => {
-                        let _ = bt_hid_profile.mouse_press(1);
-                    }
-                    (InputKey::Ok, InputType::Release) => {
-                        let _ = bt_hid_profile.mouse_release(1);
-                    }
-                    (InputKey::Left, InputType::Press) => {
-                        let _ = bt_hid_profile.mouse_move(-5, 0);
-                    }
-                    (InputKey::Right, InputType::Press) => {
-                        let _ = bt_hid_profile.mouse_move(5, 0);
-                    }
-                    (InputKey::Up, InputType::Press) => {
-                        let _ = bt_hid_profile.mouse_move(0, -5);
-                    }
-                    (InputKey::Down, InputType::Press) => {
-                        let _ = bt_hid_profile.mouse_move(0, 5);
-                    }
-                    (InputKey::Left, InputType::Repeat) => {
-                        let _ = bt_hid_profile.mouse_move(-20, 0);
-                    }
-                    (InputKey::Right, InputType::Repeat) => {
-                        let _ = bt_hid_profile.mouse_move(20, 0);
-                    }
-                    (InputKey::Up, InputType::Repeat) => {
-                        let _ = bt_hid_profile.mouse_move(0, -20);
-                    }
-                    (InputKey::Down, InputType::Repeat) => {
-                        let _ = bt_hid_profile.mouse_move(0, 20);
-                    }
-                    _ => (),
+                (InputKey::Ok, InputType::Press) => {
+                    let _ = bt_hid_profile.mouse_press(MouseButton::M1);
                 }
+                (InputKey::Ok, InputType::Release) => {
+                    let _ = bt_hid_profile.mouse_release(MouseButton::M1);
+                }
+                (InputKey::Left, InputType::Press) => {
+                    let _ = bt_hid_profile.mouse_move(-5, 0);
+                }
+                (InputKey::Right, InputType::Press) => {
+                    let _ = bt_hid_profile.mouse_move(5, 0);
+                }
+                (InputKey::Up, InputType::Press) => {
+                    let _ = bt_hid_profile.mouse_move(0, -5);
+                }
+                (InputKey::Down, InputType::Press) => {
+                    let _ = bt_hid_profile.mouse_move(0, 5);
+                }
+                (InputKey::Left, InputType::Repeat) => {
+                    let _ = bt_hid_profile.mouse_move(-20, 0);
+                }
+                (InputKey::Right, InputType::Repeat) => {
+                    let _ = bt_hid_profile.mouse_move(20, 0);
+                }
+                (InputKey::Up, InputType::Repeat) => {
+                    let _ = bt_hid_profile.mouse_move(0, -20);
+                }
+                (InputKey::Down, InputType::Repeat) => {
+                    let _ = bt_hid_profile.mouse_move(0, 20);
+                }
+                _ => (),
             }
         } else {
             unreachable!()

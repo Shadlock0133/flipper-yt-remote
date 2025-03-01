@@ -16,7 +16,7 @@ impl Canvas {
     pub unsafe fn from_ptr(canvas: *mut sys::Canvas) -> Self {
         Self {
             hnd: unsafe { NonNull::new_unchecked(canvas) },
-            _pinned: PhantomPinned
+            _pinned: PhantomPinned,
         }
     }
 
