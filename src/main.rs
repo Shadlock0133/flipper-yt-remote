@@ -26,6 +26,7 @@ use flipper_yt_remote::{
         Font, Gui, InputEvent, InputKey, InputType, Orientation,
         view_port::ViewPort,
     },
+    icons,
 };
 
 manifest!(
@@ -77,19 +78,23 @@ fn main(_args: Option<&CStr>) -> i32 {
             1 => Mode::Mouse,
             _ => unreachable!(),
         };
-        let text = if bt_connected {
-            c"bluetooth: on"
+
+        // canvas.draw_circle(32, 64, 7);
+        // canvas.draw_circle(32, 64, 14);
+
+        let icon = if bt_connected {
+            &icons::BLE_CONNECTED
         } else {
-            c"bluetooth: off"
+            &icons::BLE_DISCONNECTED
         };
-        canvas.set_font(Font::Secondary);
-        canvas.draw_str_aligned(0, 0, sys::AlignLeft, sys::AlignTop, text);
+        canvas.draw_icon(0, 0, icon);
 
         let text = match mode {
             Mode::Basic => c"basic mode",
             Mode::Mouse => c"mouse mode",
         };
-        canvas.draw_str_aligned(0, 10, sys::AlignLeft, sys::AlignTop, text);
+        canvas.set_font(Font::Secondary);
+        canvas.draw_str_aligned(0, 17, sys::AlignLeft, sys::AlignTop, text);
     });
     view_port.set_input_callback(|input| {
         state

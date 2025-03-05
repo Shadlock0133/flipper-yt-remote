@@ -70,6 +70,12 @@ impl Canvas {
         unsafe { sys::canvas_draw_glyph(self.as_ptr(), x, y, ch) };
     }
 
+    pub fn draw_icon(&self, x: i32, y: i32, icon: &sys::Icon) {
+        unsafe {
+            sys::canvas_draw_icon(self.as_ptr(), x, y, icon);
+        }
+    }
+
     pub fn draw_line(&self, x1: i32, y1: i32, x2: i32, y2: i32) {
         unsafe { sys::canvas_draw_line(self.as_ptr(), x1, y1, x2, y2) };
     }

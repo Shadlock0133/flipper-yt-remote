@@ -4,6 +4,7 @@ extern crate alloc;
 
 pub mod bt;
 pub mod gui;
+pub mod icons;
 pub mod imu;
 
 #[derive(Debug)]
