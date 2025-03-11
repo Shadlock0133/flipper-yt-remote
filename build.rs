@@ -10,21 +10,23 @@ use image::{Rgb, RgbImage};
 // const TARGET: &str = "thumbv7em-none-eabihf";
 
 fn main() {
+    println!("cargo::rerun-if-changed=assets/");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut icons = File::create(out_dir.join("icons.rs")).unwrap();
-    write_mono_image(&out_dir, "src/icon.png");
-    write_icon_const(
-        &mut icons,
-        &out_dir,
-        "BLE_CONNECTED",
-        "src/Ble_connected_15x15.png",
-    );
-    write_icon_const(
-        &mut icons,
-        &out_dir,
-        "BLE_DISCONNECTED",
-        "src/Ble_disconnected_15x15.png",
-    );
+    write_mono_image(&out_dir, "assets/icon.png");
+    for file in fs::read_dir("assets").unwrap() {
+        let file = file.unwrap();
+        if !file.file_type().unwrap().is_file() {
+            continue;
+        }
+        let path = file.path();
+        write_icon_const(
+            &mut icons,
+            &out_dir,
+            &path.file_stem().unwrap().to_str().unwrap().to_uppercase(),
+            path,
+        );
+    }
 
     let fw_path = Path::new("../../deps/flipperzero-firmware");
 
@@ -94,6 +96,7 @@ fn rgb_to_mono(image: &RgbImage) -> Vec<u8> {
     res
 }
 
+#[track_caller]
 fn write_mono_image(out_dir: &Path, src: impl AsRef<Path>) {
     let image = image::open(&src).unwrap().into_rgb8();
     fs::write(

@@ -14,7 +14,11 @@ use core::{
 };
 
 use flipperzero::{
-    furi::{message_queue::MessageQueue, time::Duration},
+    furi::{message_queue::MessageQueue, time::FuriDuration},
+    gui::{
+        Gui,
+        view_port::{InputEvent, InputKey, InputType, Orientation, ViewPort},
+    },
     println,
 };
 use flipperzero_rt::{entry, manifest};
@@ -22,10 +26,6 @@ use flipperzero_sys as sys;
 
 use flipper_yt_remote::{
     bt::{Bt, BtStatus, ConsumerKey, Key, KeyMods, MouseButton},
-    gui::{
-        Font, Gui, InputEvent, InputKey, InputType, Orientation,
-        view_port::ViewPort,
-    },
     icons,
 };
 
@@ -79,9 +79,6 @@ fn main(_args: Option<&CStr>) -> i32 {
             _ => unreachable!(),
         };
 
-        // canvas.draw_circle(32, 64, 7);
-        // canvas.draw_circle(32, 64, 14);
-
         let icon = if bt_connected {
             &icons::BLE_CONNECTED
         } else {
@@ -89,22 +86,37 @@ fn main(_args: Option<&CStr>) -> i32 {
         };
         canvas.draw_icon(0, 0, icon);
 
-        let text = match mode {
-            Mode::Basic => c"basic mode",
-            Mode::Mouse => c"mouse mode",
-        };
-        canvas.set_font(Font::Secondary);
-        canvas.draw_str_aligned(0, 17, sys::AlignLeft, sys::AlignTop, text);
+        match mode {
+            Mode::Basic => {
+                let (x, y) = (32, (128 + 15) / 2);
+                canvas.draw_icon(53, 2, &icons::BASIC_MODE);
+                canvas.draw_circle(x, y, 5);
+                canvas.draw_icon(x - 2, y - 2, &icons::PLAY_PAUSE);
+                canvas.draw_circle(x, y, 16);
+                canvas.draw_icon(x - 14, y - 3, &icons::LEFT_ARROW);
+                canvas.draw_icon(x + 7, y - 3, &icons::RIGHT_ARROW);
+                canvas.draw_icon(x - 4, y - 13, &icons::FRAME_LEFT);
+                canvas.draw_icon(x - 4, y + 7, &icons::FRAME_RIGHT);
+                canvas.draw_circle(x, y, 25);
+                canvas.draw_icon(x - 23, y - 2, &icons::SPEED_LEFT);
+                canvas.draw_icon(x + 18, y - 2, &icons::SPEED_RIGHT);
+                canvas.draw_icon(x - 3, y - 23, &icons::VOLUME_UP);
+                canvas.draw_icon(x - 3, y + 18, &icons::VOLUME_DOWN);
+            }
+            Mode::Mouse => {
+                canvas.draw_icon(54, 2, &icons::MOUSE_MODE);
+            }
+        }
     });
     view_port.set_input_callback(|input| {
         state
             .event_queue
-            .put(input, Duration::WAIT_FOREVER)
+            .put(input, FuriDuration::WAIT_FOREVER)
             .unwrap();
     });
 
-    let mut gui = Gui::open();
-    gui.add_view_port(&view_port, sys::GuiLayerFullscreen);
+    let gui = Gui::open();
+    let view_port = gui.add_view_port(view_port, sys::GuiLayerFullscreen);
 
     #[repr(u8)]
     #[derive(Clone, Copy, PartialEq, Eq)]
@@ -120,75 +132,82 @@ fn main(_args: Option<&CStr>) -> i32 {
     // TODO: better text align enum
     loop {
         state.mode.store(mode as u8, Ordering::Relaxed);
-        let event = state.event_queue.get(Duration::WAIT_FOREVER).unwrap();
-        if let (InputKey::Back, InputType::Long) = (event.key, event.type_) {
-            break;
-        }
-
-        if let Mode::Basic = mode {
-            if let (InputKey::Back, InputType::Short) = (event.key, event.type_)
+        if let Ok(event) =
+            state.event_queue.get(FuriDuration::from_secs(1) / 30)
+        {
+            if let (InputKey::Back, InputType::Long) = (event.key, event.type_)
             {
-                mode = Mode::Mouse
+                break;
             }
-            let key = match (event.key, event.type_) {
-                (InputKey::Ok, InputType::Short) => Some(Key::Spacebar),
-                (InputKey::Ok, InputType::Long) => Some(Key::F),
-                (InputKey::Left, InputType::Short) => Some(Key::LeftArrow),
-                (InputKey::Right, InputType::Short) => Some(Key::RightArrow),
-                (InputKey::Left, InputType::Long) => {
-                    Some(Key::Comma | KeyMods::LeftShift)
+
+            if let Mode::Basic = mode {
+                if let (InputKey::Back, InputType::Short) =
+                    (event.key, event.type_)
+                {
+                    mode = Mode::Mouse
                 }
-                (InputKey::Right, InputType::Long) => {
-                    Some(Key::Dot | KeyMods::LeftShift)
+                let key = match (event.key, event.type_) {
+                    (InputKey::Ok, InputType::Short) => Some(Key::Spacebar),
+                    (InputKey::Ok, InputType::Long) => Some(Key::F),
+                    (InputKey::Left, InputType::Short) => Some(Key::LeftArrow),
+                    (InputKey::Right, InputType::Short) => {
+                        Some(Key::RightArrow)
+                    }
+                    (InputKey::Left, InputType::Long) => {
+                        Some(Key::Comma | KeyMods::LeftShift)
+                    }
+                    (InputKey::Right, InputType::Long) => {
+                        Some(Key::Dot | KeyMods::LeftShift)
+                    }
+                    (InputKey::Up, InputType::Short) => Some(Key::Dot),
+                    (InputKey::Down, InputType::Short) => Some(Key::Comma),
+                    _ => None,
+                };
+                if let Some(key) = key {
+                    let _ = bt_hid_profile.key_press(key);
+                    let _ = bt_hid_profile.key_release(key);
                 }
-                (InputKey::Up, InputType::Short) => Some(Key::Dot),
-                (InputKey::Down, InputType::Short) => Some(Key::Comma),
-                _ => None,
-            };
-            if let Some(key) = key {
-                let _ = bt_hid_profile.key_press(key);
-                let _ = bt_hid_profile.key_release(key);
+                let consumer_key = match (event.key, event.type_) {
+                    (InputKey::Up, InputType::Long) => {
+                        Some(ConsumerKey::VolumeIncrease)
+                    }
+                    (InputKey::Down, InputType::Long) => {
+                        Some(ConsumerKey::VolumeDecrease)
+                    }
+                    _ => None,
+                };
+                if let Some(button) = consumer_key {
+                    let _ = bt_hid_profile.consumer_key_press(button);
+                    let _ = bt_hid_profile.consumer_key_release(button);
+                }
+            } else if let Mode::Mouse = mode {
+                match (event.key, event.type_) {
+                    (InputKey::Back, InputType::Short) => mode = Mode::Basic,
+                    (InputKey::Ok, InputType::Press) => {
+                        let _ = bt_hid_profile.mouse_press(MouseButton::M1);
+                    }
+                    (InputKey::Ok, InputType::Release) => {
+                        let _ = bt_hid_profile.mouse_release(MouseButton::M1);
+                    }
+                    _ => (),
+                }
+                let dv = match (event.key, event.type_) {
+                    (InputKey::Left, InputType::Press) => Some((-5, 0)),
+                    (InputKey::Right, InputType::Press) => Some((5, 0)),
+                    (InputKey::Up, InputType::Press) => Some((0, -5)),
+                    (InputKey::Down, InputType::Press) => Some((0, 5)),
+                    (InputKey::Left, InputType::Repeat) => Some((-20, 0)),
+                    (InputKey::Right, InputType::Repeat) => Some((20, 0)),
+                    (InputKey::Up, InputType::Repeat) => Some((0, -20)),
+                    (InputKey::Down, InputType::Repeat) => Some((0, 20)),
+                    _ => None,
+                };
+                if let Some((dx, dy)) = dv {
+                    let _ = bt_hid_profile.mouse_move(dx, dy);
+                }
+            } else {
+                unreachable!()
             }
-            let consumer_key = match (event.key, event.type_) {
-                (InputKey::Up, InputType::Long) => {
-                    Some(ConsumerKey::VolumeIncrease)
-                }
-                (InputKey::Down, InputType::Long) => {
-                    Some(ConsumerKey::VolumeDecrease)
-                }
-                _ => None,
-            };
-            if let Some(button) = consumer_key {
-                let _ = bt_hid_profile.consumer_key_press(button);
-                let _ = bt_hid_profile.consumer_key_release(button);
-            }
-        } else if let Mode::Mouse = mode {
-            match (event.key, event.type_) {
-                (InputKey::Back, InputType::Short) => mode = Mode::Basic,
-                (InputKey::Ok, InputType::Press) => {
-                    let _ = bt_hid_profile.mouse_press(MouseButton::M1);
-                }
-                (InputKey::Ok, InputType::Release) => {
-                    let _ = bt_hid_profile.mouse_release(MouseButton::M1);
-                }
-                _ => (),
-            }
-            let dv = match (event.key, event.type_) {
-                (InputKey::Left, InputType::Press) => Some((-5, 0)),
-                (InputKey::Right, InputType::Press) => Some((5, 0)),
-                (InputKey::Up, InputType::Press) => Some((0, -5)),
-                (InputKey::Down, InputType::Press) => Some((0, 5)),
-                (InputKey::Left, InputType::Repeat) => Some((-20, 0)),
-                (InputKey::Right, InputType::Repeat) => Some((20, 0)),
-                (InputKey::Up, InputType::Repeat) => Some((0, -20)),
-                (InputKey::Down, InputType::Repeat) => Some((0, 20)),
-                _ => None,
-            };
-            if let Some((dx, dy)) = dv {
-                let _ = bt_hid_profile.mouse_move(dx, dy);
-            }
-        } else {
-            unreachable!()
         }
 
         view_port.update();

@@ -21,13 +21,19 @@ bench = false
 test = false
 
 [dependencies]
-flipperzero = { version = "0.14.0" }
-flipperzero-sys = { version = "0.14.0" }
-flipperzero-rt = { version = "0.14.0" }
-flipperzero-alloc = { version = "0.14.0" }
+flipperzero = { git = "https://github.com/Shadlock0133/flipperzero.git", features = ["alloc"] }
+flipperzero-sys = { git = "https://github.com/Shadlock0133/flipperzero.git" }
+flipperzero-rt = { git = "https://github.com/Shadlock0133/flipperzero.git" }
+flipperzero-alloc = { git = "https://github.com/Shadlock0133/flipperzero.git" }
 bitflags = "2.8.0"
 
 [build-dependencies]
-bindgen = "0.71.1"
+# bindgen = "0.71.1"
 cc = "1.2.15"
 image = { version = "0.25", default-features = false, features = ["png"] }
+
+[patch."https://github.com/Shadlock0133/flipperzero.git"]
+flipperzero = { path = "../flipperzero/crates/flipperzero" }
+flipperzero-sys = { path = "../flipperzero/crates/sys" }
+flipperzero-rt = { path = "../flipperzero/crates/rt" }
+flipperzero-alloc = { path = "../flipperzero/crates/alloc" }
